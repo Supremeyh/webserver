@@ -192,7 +192,8 @@ module.exports = handleUserRouter
 ```
 
 ##### 开发路由
-以，博客列表路由 为例
+使用 postman 处理http请求
+以，博客列表路由 为例，新建router 处理路由 和 controller 处理数据
 在 model/resModel.js 中新建 SuccessModel 和 ErrorModel模型
 在 controller/blog.js 中新建 getList
 
