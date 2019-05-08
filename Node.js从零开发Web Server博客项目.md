@@ -118,6 +118,85 @@ server.listen(3000, () => {
 使用nodemon检测文件变化，自动重启node
 使用cross-env 设置环境变量，兼容mac linux 和windows
 
+#### 初始化路由
+初始化路由: 根据技术方案的设计，做出路由
+返回假数据: 将路由和数据分离，以符合设计原则
+```JavaScript
+// /.bin/www.js
+const http = require('http')
+
+const PORT = 3000
+const serverHandle = require('../index')
+
+const server = http.createServer(serverHandle)
+server.listen(PORT, () => {
+  console.log('listening at http://localhost:3000')
+})
+
+
+// index.js
+// process.env.NODE_ENV
+const handleUserRouter = require('./src/router/user')
+const handleBlogRouter = require('./src/router/blog')
+
+
+const serverHandler = (req, res) => {
+  // 设置返回数据格式 JSON
+  res.setHeader('Content-Type', 'application/json')
+
+  // 获取path 路由
+  const url = req.url
+  req.path = url.split('?')[0]
+
+  // 处理blog路由
+  const blogData = handleBlogRouter(req, res)
+  if(blogData) {
+    res.end(
+      JSON.stringify(blogData)
+    )
+    return
+  }
+
+  // 处理user路由
+  const userData = handleUserRouter(req, res)
+  if(userData) {
+    res.end(
+      JSON.stringify(userData)
+    )
+    return
+  }
+
+  // 未命中 404
+  res.writeHead(404, {'Content-Type': 'text/plain'})
+  res.write('404 Not Found')
+  res.end()
+}
+
+module.exports = serverHandler
+
+
+// 拆分路由 新建router/blog.js 和 router/user.js 分别处理blog和user相关路由
+// 如 router/user.js 
+const handleUserRouter = (req, res) => {
+  const { method, url, path } = req
+
+  // 登录
+  if(method==='POST' && path==='/api/user/login') {
+    return {
+      msg: '登录'
+    }
+  }
+}
+
+module.exports = handleUserRouter
+```
+
+##### 开发路由
+以，博客列表路由 为例
+在 model/resModel.js 中新建 SuccessModel 和 ErrorModel模型
+在 controller/blog.js 中新建 getList
+
+在 router/blog.js 中引用 getList 和 SuccessModel
 
 
 
