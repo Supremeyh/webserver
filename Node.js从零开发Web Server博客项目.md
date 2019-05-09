@@ -118,9 +118,12 @@ server.listen(3000, () => {
 使用nodemon检测文件变化，自动重启node
 使用cross-env 设置环境变量，兼容mac linux 和windows
 
-#### 初始化路由
+#### 开发接口，处理路由
 初始化路由: 根据技术方案的设计，做出路由
-返回假数据: 将路由和数据分离，以符合设计原则
+返回假数据: 将路由和数据分离，以符合设计原则，使用 postman 处理http请求
+结构层次: 划分为三层: www启动服务及基本配置、index分配路由、router处理路由、 controller接口调用获取结果、model格式化返回结果
+
+启动服务，基本配置
 ```JavaScript
 // /.bin/www.js
 const http = require('http')
@@ -132,13 +135,39 @@ const server = http.createServer(serverHandle)
 server.listen(PORT, () => {
   console.log('listening at http://localhost:3000')
 })
+```
 
+分配路由
+```JavaScript
+// /index.js  
+const quertstring = require('querystring')
 
-// index.js
-// process.env.NODE_ENV
 const handleUserRouter = require('./src/router/user')
 const handleBlogRouter = require('./src/router/blog')
 
+// 处理 post data
+const getPostData = (req) => {  
+  return new Promise((resolve, reject) => {
+    if(req.method !== 'POST') {
+      resolve({})
+    }
+    if(req.headers['content-type'] !== 'application/json') {
+      resolve({})
+    }
+
+    let postData = ''
+    req.on('data', chunk => {
+      postData += chunk.toString()
+    })
+    
+    req.on('end', () => {
+      if(!postData) {
+        resolve({})
+      }
+      resolve(JSON.parse(postData))
+    })
+  })
+}
 
 const serverHandler = (req, res) => {
   // 设置返回数据格式 JSON
@@ -148,34 +177,44 @@ const serverHandler = (req, res) => {
   const url = req.url
   req.path = url.split('?')[0]
 
-  // 处理blog路由
-  const blogData = handleBlogRouter(req, res)
-  if(blogData) {
-    res.end(
-      JSON.stringify(blogData)
-    )
-    return
-  }
+  // 解析query
+  req.query = quertstring.parse(url.split('?')[0])
 
-  // 处理user路由
-  const userData = handleUserRouter(req, res)
-  if(userData) {
-    res.end(
-      JSON.stringify(userData)
-    )
-    return
-  }
+  // 处理 post data
+  getPostData(req).then(postData => {
+    req.body = postData    
+    // 处理blog路由
+    const blogData = handleBlogRouter(req, res)
 
-  // 未命中 404
-  res.writeHead(404, {'Content-Type': 'text/plain'})
-  res.write('404 Not Found')
-  res.end()
+    if(blogData) {
+      res.end(
+        JSON.stringify(blogData)
+      )
+      return
+    }
+
+    // 处理user路由
+    const userData = handleUserRouter(req, res)
+    if(userData) {
+      res.end(
+        JSON.stringify(userData)
+      )
+      return
+    }
+
+    // 未命中 404
+    res.writeHead(404, {'Content-Type': 'text/plain'})
+    res.write('404 Not Found')
+    res.end()
+  })
+
 }
 
 module.exports = serverHandler
+```
 
-
-// 拆分路由 新建router/blog.js 和 router/user.js 分别处理blog和user相关路由
+处理路由，router/blog.js 和 router/user.js 分别处理blog和user相关路由
+```JavaScript
 // 如 router/user.js 
 const handleUserRouter = (req, res) => {
   const { method, url, path } = req
@@ -191,13 +230,48 @@ const handleUserRouter = (req, res) => {
 module.exports = handleUserRouter
 ```
 
-##### 开发路由
-使用 postman 处理http请求
-以，博客列表路由 为例，新建router 处理路由 和 controller 处理数据
-在 model/resModel.js 中新建 SuccessModel 和 ErrorModel模型
-在 controller/blog.js 中新建 getList
+格式化返回结果
+```JavaScript
+// model/resModel
+class BaseModel {
+  constructor(data, message) {
+    // data是对象，message是字符串，并兼容不传data的情况
+    if(typeof data === 'string') {
+      this.message = data
+      data = null
+      message = null
+    }
 
-在 router/blog.js 中引用 getList 和 SuccessModel
+    if(data) {
+      this.data = data
+    }
+    if(message) {
+      this.message = message
+    }
+  }
+}
+
+
+class SuccessModel extends BaseModel {
+  constructor(data, message) {
+    super(data, message)
+    this.errno = 0 
+  }
+}
+
+class ErrorModel extends BaseModel {
+  constructor(data, message) {
+    super(data, message)
+    this.errno = -1
+  }
+}
+
+
+module.exports = {
+  SuccessModel,
+  ErrorModel
+}
+```
 
 
 
