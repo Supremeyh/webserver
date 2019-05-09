@@ -273,7 +273,56 @@ module.exports = {
 }
 ```
 
+### MySql 数据存储
+#### 安装
+MySql 是web server中最流行的关系型数据库
+官网下载安装MySql ，mysql workbench 操作sql 的可视化客户端 
 
+#### 操作数据库
+* 建库
+create schema 'myblog';  创建myblog 的数据库
+show databases; 查询是否成功
+* 建表
+新建 users 和 blogs两个表
+```JavaScript
+// column datatype pk主键 nn不为空 AI自动增加 Default 
+users: id username password realname
+CREATE TABLE  `myblg`, `users` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `username` VARCHAR(20) NOT NULL,
+  `password` VARCHAR(20) NOT NULL,
+  `realname` VARCHAR(10) NOT NULL,
+ PRIMARY KEY(`id`)
+);
+
+blogs: id title content createtime author
+```
+* 表操作
+删改查
+```JavaScript
+use webserver;
+-- show databases;
+
+// 修改列属性 让id 自增, 或者选中fileds点击某列修改属性
+alter table users change `id` `id` INT(10) NOT NULL AUTO_INCREMENT
+
+// 增
+insert into users (username, `password`, realname) values('zhangsan', '123', '张三');
+
+// 查
+select * from users;  // 所有列
+select id, username from users  // 指定列名
+select id, username from users where id='123' and username='zhangsan'; // 指定列名和条件
+select id, username from users where username like '%zhang%'; // 模糊查询
+select id, username from users where username like '%zhang%' order by id desc; // 排序 倒叙
+
+// 改
+update users set realname='张三' where name='lisi' limit 5
+
+// 删
+delete from users where username='lisi';
+update users set state=0 where username='lisi'  // 实际项目中 更多修改表，新增state字段，通过修改状态标记是否可用，来软删除
+```
 
 
 
