@@ -22,16 +22,20 @@ const getList = (author, keyword) => {
 }
 
 const getDetail = (id) => {
-  let sql = `select * from blogs where id='${id}'`
+  let sql = `select * from blogs where id='${id}';`
   return execSql(sql).then(arr => {
     return arr[0]
   })
 }
 
 const newBlog = (blogData={}) => {
-  return {
-    id: 3
-  }
+  const { title, content, author, createtime } = blogData
+  let sql = `insert into blogs (title, content, author, createtime) values ('${title}', '${content}', '${author}', '${createtime}');`
+  return execSql(sql).then(insertData => {
+    return {
+      id: insertData.insertId
+    }
+  })
 }
 
 const updateBlog = (id, data) => {

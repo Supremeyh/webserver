@@ -29,8 +29,10 @@ const handleBlogRouter = (req, res) => {
   // 新建一篇博客
   if(method==='POST' && path==='/api/blog/new') {
     const blogData = req.body
-    const data = newBlog(blogData)
-    return new SuccessModel(data)
+    const dataResult = newBlog(blogData)
+    return dataResult.then(data => {
+      return new SuccessModel(data)
+    })
   }
 
   // 更新一篇博客
