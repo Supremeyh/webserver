@@ -277,7 +277,7 @@ module.exports = {
 ### MySql 数据存储
 #### 安装
 MySql 是web server中最流行的关系型数据库
-官网下载安装MySql ，mysql workbench 操作sql 的可视化客户端 
+官网下载安装MySql、mysql workbench 操作sql 的可视化客户端，或者使用Navicat
 
 #### 操作数据库
 * 建库

@@ -24,7 +24,7 @@ const getList = (author, keyword) => {
 const getDetail = (id) => {
   let sql = `select * from blogs where id='${id}';`
   return execSql(sql).then(arr => {
-    return arr[0]
+    return arr[0] || {}
   })
 }
 
