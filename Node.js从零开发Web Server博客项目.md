@@ -318,7 +318,7 @@ select id, username from users where username like '%zhang%'; // 模糊查询
 select id, username from users where username like '%zhang%' order by id desc; // 排序 倒叙
 
 // 改
-update users set realname='张三' where name='lisi' limit 5
+update users set realname='张三', state=0 where username='lisi' limit 5
 
 // 删
 delete from users where username='lisi';
@@ -422,7 +422,7 @@ module.exports = {
 ```
 
 ##### API对接mysql（博客列表）
-替换假数据，controller改为mysql连接的真实数据, 并修改路由router 和 index.js 为异步promise。  以blog 的 getList 为例
+替换假数据，controller改为mysql连接的真实数据, 并修改路由router 和 index.js 为异步promise。  以blog 的 getList 获取博客列表 为例
 ```JavaScript
 // controller/blog.js
 const getList = (author, keyword) => {
