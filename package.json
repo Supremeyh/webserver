@@ -4,13 +4,17 @@
   "description": "Node.js从零开发Web Server博客项目",
   "main": "index.js",
   "scripts": {
-    "dev": "cross-env NODE_ENV=dev nodemon ./bin/www.js",
-    "prod": "cross-env NODE_ENV=production nodemon ./bin/www.js",
+    "dev": "cross-env NODE_ENV=dev nodemon .bin/www.js",
+    "prod": "cross-env NODE_ENV=production nodemon .bin/www.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "sea",
   "license": "ISC",
   "dependencies": {
-    "lodash": "^4.17.11"
+    "lodash": "^4.17.11",
+    "mysql": "^2.17.1"
+  },
+  "devDependencies": {
+    "cross-env": "^5.2.0"
   }
 }

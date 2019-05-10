@@ -116,7 +116,8 @@ server.listen(3000, () => {
 
 #### 搭建开发环境
 使用nodemon检测文件变化，自动重启node
-使用cross-env 设置环境变量，兼容mac linux 和windows
+使用cross-env 设置环境变量，兼容mac linux 和windows, 需先使用 npm i --save-dev cross-env 命令安装cross-env 
+
 
 #### 开发接口，处理路由
 初始化路由: 根据技术方案的设计，做出路由
@@ -178,7 +179,7 @@ const serverHandler = (req, res) => {
   req.path = url.split('?')[0]
 
   // 解析query
-  req.query = quertstring.parse(url.split('?')[0])
+  req.query = quertstring.parse(url.split('?')[1])
 
   // 处理 post data
   getPostData(req).then(postData => {
@@ -324,8 +325,156 @@ delete from users where username='lisi';
 update users set state=0 where username='lisi'  // 实际项目中 更多修改表，新增state字段，通过修改状态标记是否可用，来软删除
 ```
 
+#### nodejs操作数据库
+npm i mysql --save
+npm run dev 启动项目,这步需要安装cross-env, 使用命令npm i --save-dev cross-env
+
+##### demo
+```JavaScript
+// myql-test/index.js  demo
+const mysql = require('mysql')
+
+// 创建连接对象
+const con = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: 'sea123456',
+  port: 3306,
+  database: 'webserver'
+})
+
+// 开始连接
+con.connect()
+
+// 执行 sql 语句
+const sql = `insert into users (username, realname, password, state) values('zl','赵六','123','1')`
+con.query(sql, (err, result) => {
+  if(err) {
+    console.log(err)
+    return
+  }
+  console.log(result)
+  
+})
+
+// 关闭连接
+con.end()
+```
+
+##### nodejs 连接 mysql 做成工具
+在config/db.js 配置mysql, db/mysql.js 导出统一执行sql语句的函数 execSql。 这样就将mysql集成进项目，不再是上面的demo
+```JavaScript
+// config/db.js
+const env = process.env.NODE_ENV
+
+// 配置
+let MYSQL_CONF = {}
+
+if(env==='dev') {
+  MYSQL_CONF = {
+    host: 'localhost',
+    user: 'root',
+    password: 'sea123456',
+    port: 3306,
+    database: 'webserver'
+  }
+}
+
+if(env==='production') {
+  MYSQL_CONF = {//..}
+}
 
 
+module.exports = {
+  MYSQL_CONF
+}
+
+
+
+// db/mysql.js
+const mysql = require('mysql')
+const { MYSQL_CONF } = require('../config/db')
+
+// 创建连接对象
+const con = mysql.createConnection(MYSQL_CONF)
+
+// 开始连接
+con.connect()
+
+// 统一执行 sql 语句的函数
+function execSql(sql) {
+  return new Promise((resolve, reject) => {
+    con.query(sql, (err, result) => {
+      if(err) {
+        reject(err)
+      }
+      resolve(result)
+    })
+  })
+}
+
+// 关闭连接  不需要关闭，单例模式
+// con.end()
+
+module.exports = {
+  execSql
+}
+```
+
+##### API对接mysql（博客列表）
+替换假数据，controller改为mysql连接的真实数据, 并修改路由router 和 index.js 为异步promise。  以blog 的 getList 为例
+```JavaScript
+// controller/blog.js
+const getList = (author, keyword) => {
+  let sql = `select * from blogs where 1=1 `
+  if(author) {
+    sql += `and author='${author}' `
+  }
+  if(keyword) {
+    sql += `and title like '%${keyword}%' `
+  }
+  sql += `order by createtime desc;`
+  let result = execSql(sql)
+  return result
+}
+
+
+// router/blog.js
+// 获取博客列表
+if(method==='GET' && path==='/api/blog/list') {
+  const author = req.query.author || ''
+  const keyword = req.query.keyword || ''
+  // const listData = getList(author, keyword)
+  // return new SuccessModel(listData)
+  const result = getList(author, keyword)
+  return result.then(listData => {
+    return new SuccessModel(listData)
+  })
+}
+
+// index.js
+getPostData(req).then(postData => {
+    req.body = postData    
+    // 处理blog路由
+    // const blogData = handleBlogRouter(req, res)
+    // if(blogData) {
+    //   res.end(
+    //     JSON.stringify(blogData)
+    //   )
+    //   return
+    // }
+    const blogResult = handleBlogRouter(req, res)    
+    if(blogResult) {
+      blogResult.then(blogData => {
+        res.end(
+          JSON.stringify(blogData)
+        )
+      })
+      return  // return 要写在这
+    }
+    // ..
+}
+```
 
 
 

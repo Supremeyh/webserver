@@ -22,8 +22,9 @@ const getPostData = (req) => {
     req.on('end', () => {
       if(!postData) {
         resolve({})
-      }
-      resolve(JSON.parse(postData))
+        return
+      }      
+      resolve(JSON.parse(postData))      
     })
   })
 }
@@ -37,18 +38,27 @@ const serverHandler = (req, res) => {
   req.path = url.split('?')[0]
 
   // 解析query
-  req.query = quertstring.parse(url.split('?')[0])
+  req.query = quertstring.parse(url.split('?')[1])
+  
 
   // 处理 post data
   getPostData(req).then(postData => {
     req.body = postData    
     // 处理blog路由
-    const blogData = handleBlogRouter(req, res)
-
-    if(blogData) {
-      res.end(
-        JSON.stringify(blogData)
-      )
+    // const blogData = handleBlogRouter(req, res)
+    // if(blogData) {
+    //   res.end(
+    //     JSON.stringify(blogData)
+    //   )
+    //   return
+    // }
+    const blogResult = handleBlogRouter(req, res)    
+    if(blogResult) {
+      blogResult.then(blogData => {
+        res.end(
+          JSON.stringify(blogData)
+        )
+      })
       return
     }
 

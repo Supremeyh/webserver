@@ -1,21 +1,24 @@
+const { execSql } = require('../db/mysql')
+
 const getList = (author, keyword) => {
-  // mock
-  return [
-    {
-      id: 1,
-      title: '标题',
-      content: '内容',
-      createTime: '1557301478749',
-      author: 'a'
-    },
-    {
-      id: 2,
-      title: '标题',
-      content: '内容',
-      createTime: '1557301478791',
-      author: 'b'
-    }
-  ]
+  let sql = `select * from blogs where 1=1 `
+  if(author) {
+    sql += `and author='${author}' `
+  }
+  if(keyword) {
+    sql += `and title like '%${keyword}%' `
+  }
+  sql += `order by createtime desc;`  
+  return execSql(sql)
+  // return [
+  //   {
+  //     id: 1,
+  //     title: '标题',
+  //     content: '内容',
+  //     createTime: '1557301478749',
+  //     author: 'a'
+  //   }
+  // ]
 }
 
 const getDetail = (id) => {
