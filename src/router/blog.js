@@ -19,9 +19,11 @@ const handleBlogRouter = (req, res) => {
 
   // 获取博客详情
   if(method==='GET' && path==='/api/blog/detail') {
-    const id = req.query.id
-    let detailData = getDetail(id)
-    return new SuccessModel(detailData)
+    const id = req.query.id || ''
+    let detailResult = getDetail(id)
+    return detailResult.then(detailData => {
+      return new SuccessModel(detailData)
+    })
   }
 
   // 新建一篇博客
