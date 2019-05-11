@@ -508,7 +508,7 @@ const handleUserRouter = (req, res) => {
     const result = loginCheck(username, password)
     return result.then(userData => {
       if(userData.username) {
-        // 操作cookie
+        // 操作cookie  使用 HttpOnly 和 expires 限制前端获取改写和设置cookie及过期时间
         res.setHeader('Set-Cookie', `username=${userData.username}; path=/; HttpOnly; expires=${setCookieExpire()}`)
         return new SuccessModel(userData)
       }
@@ -517,7 +517,7 @@ const handleUserRouter = (req, res) => {
   }
 }
 ```
-同时，使用 HttpOnly 和 expires 限制前端获取改写和设置cookie及过期时间。
+
 
 #### cookie、 session
 #### session 写入redis
