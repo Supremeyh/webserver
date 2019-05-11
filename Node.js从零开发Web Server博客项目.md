@@ -476,6 +476,52 @@ getPostData(req).then(postData => {
 }
 ```
 
+### 登录校验、登录信息存储
+#### cookie
+HTTP Cookie是服务器发送到用户浏览器并保存在本地的一小块数据，它会在浏览器下次向同一服务器再发起请求时被携带并发送到服务器上。通常，它用于告知服务端两个请求是否来自同一浏览器，如保持用户的登录状态。Cookie使基于无状态的HTTP协议记录稳定的状态信息成为了可能。
+
+主要用于: 会话状态管理（如用户登录状态、购物车）、个性化设置（如用户自定义设置、主题等）、浏览器行为跟踪（如跟踪分析用户行为等）
+
+特点: 最大5kb、跨域不共享、格式如 k1=v1;k2=v2; 因此可以存储结构化数据
+
+客户端操作cookie: document.cooke='k3=v3' 会累加到cookie中
+server端操作cookie:   
+```JavaScript
+// index.js
+// 解析cookie
+req.cookie = {}
+const cookieStr = req.headers.cookie || ''
+cookieStr.split(';').forEach(item => {
+  if(!item) return
+  const arr = item.split('=')
+  const key = arr[0]
+  const val = arr[1]
+  req.cookie[key] = val
+})
+
+// router/user.js
+const handleUserRouter = (req, res) => {
+  const { method, url, path } = req
+  // 登录
+  if(method==='POST' && path==='/api/user/login') {
+    const { username, password } = req.body
+    const result = loginCheck(username, password)
+    return result.then(userData => {
+      if(userData.username) {
+        // 操作cookie
+        res.setHeader('Set-Cookie', `username=${userData.username}; path=/`)
+        return new SuccessModel(userData)
+      }
+      return new ErrorModel('登录失败')
+    })
+  }
+}
+```
+
+
+#### cookie、 session
+#### session 写入redis
+#### 登录nginx反向代理
 
 
 
