@@ -693,8 +693,46 @@ module.exports = {
   getRedisVal,
 }
 ```
+##### session登录验证
+```JavaScript
+// utils/index.js 统一的登录验证函数
+const loginCheckSession = (req) => {
+  // session中没有username信息，则返回错误信息
+  if(!req.session.username) {
+    return  Promise.resolve(new ErrorModel('未登录'))
+  }
+  // return undefined  // 这行可注释掉，即没有返回值，或返回undefined
+}
 
 
+// router/blog.js
+const { loginCheckSession } = require('../utils')
+
+const handleBlogRouter = (req, res) => {
+  const { method, url, path } = req
+
+  // 登录验证  放在handleBlogRouter的顶部做成拦截器，保证所有后期请求都需先登录
+  const loginCheckResult = loginCheckSession(req)
+  if(loginCheckResult) {  // 有值，说明未登录
+    return loginCheckSession
+  }
+
+  // 新建一篇博客  比如新建博客时，需要校验author，从session的username取出，保证登录的账号和author是同一个人，不会删除其他人的博客
+  if(method==='POST' && path==='/api/blog/new') {
+    const author = req.session.username
+    req.body.author = author
+    
+    const blogData = req.body
+    const dataResult = newBlog(blogData)
+    return dataResult.then(data => {
+      return new SuccessModel(data)
+    })
+  }
+  // ...
+
+}
+
+```
 
 #### 登录nginx反向代理
 

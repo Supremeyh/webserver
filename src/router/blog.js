@@ -4,8 +4,16 @@ const { getList, getDetail, newBlog, updateBlog, delBlog } = require('../control
 // model
 const { SuccessModel, ErrorModel } = require('../model/resModel')
 
+const { loginCheckSession } = require('../utils')
+
 const handleBlogRouter = (req, res) => {
   const { method, url, path } = req
+
+  // 登录验证
+  const loginCheckResult = loginCheckSession(req)
+  if(loginCheckResult) {  // 有值，说明未登录
+    return loginCheckSession
+  }
 
   // 获取博客列表
   if(method==='GET' && path==='/api/blog/list') {
@@ -28,6 +36,9 @@ const handleBlogRouter = (req, res) => {
 
   // 新建一篇博客
   if(method==='POST' && path==='/api/blog/new') {
+    const author = req.session.username  // 替换req.query.author
+    req.body.author = author
+    
     const blogData = req.body
     const dataResult = newBlog(blogData)
     return dataResult.then(data => {
@@ -51,7 +62,8 @@ const handleBlogRouter = (req, res) => {
   // 删除一篇博客
   if(method==='POST' && path==='/api/blog/del') {
     const id = req.query.id
-    const author = req.query.author
+    // const author = req.query.author
+    const author = req.session.username  // 替换req.query.author
     let result = delBlog(id, author)
     return result.then(val => {
       if(val) {
