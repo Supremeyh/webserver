@@ -40,14 +40,14 @@ const serverHandler = (req, res) => {
   // 解析query
   req.query = quertstring.parse(url.split('?')[1])
   
-  // 解析cookie
+  // 解析cookie  处理成键值对 存入req.cookie中
   req.cookie = {}
   const cookieStr = req.headers.cookie || ''
   cookieStr.split(';').forEach(item => {
     if(!item) return
     const arr = item.split('=')
-    const key = arr[0]
-    const val = arr[1]
+    const key = arr[0].trim()
+    const val = arr[1].trim()
     req.cookie[key] = val
   })
   

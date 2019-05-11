@@ -487,17 +487,17 @@ HTTP Cookie是服务器发送到用户浏览器并保存在本地的一小块数
 客户端操作cookie: document.cooke='k3=v3' 会累加到cookie中
 server端操作cookie:   
 ```JavaScript
-// index.js
-// 解析cookie
+// index.js  解析cookie, 处理成键值对 存入req.cookie中
 req.cookie = {}
 const cookieStr = req.headers.cookie || ''
 cookieStr.split(';').forEach(item => {
   if(!item) return
   const arr = item.split('=')
-  const key = arr[0]
-  const val = arr[1]
+  const key = arr[0].trim()  // trim() 保证去除收尾空格
+  const val = arr[1].trim()
   req.cookie[key] = val
 })
+
 
 // router/user.js
 const handleUserRouter = (req, res) => {
@@ -509,7 +509,7 @@ const handleUserRouter = (req, res) => {
     return result.then(userData => {
       if(userData.username) {
         // 操作cookie
-        res.setHeader('Set-Cookie', `username=${userData.username}; path=/`)
+        res.setHeader('Set-Cookie', `username=${userData.username}; path=/; HttpOnly; expires=${setCookieExpire()}`)
         return new SuccessModel(userData)
       }
       return new ErrorModel('登录失败')
@@ -517,7 +517,7 @@ const handleUserRouter = (req, res) => {
   }
 }
 ```
-
+同时，使用 HttpOnly 和 expires 限制前端获取改写和设置cookie及过期时间。
 
 #### cookie、 session
 #### session 写入redis
