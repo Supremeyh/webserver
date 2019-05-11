@@ -517,10 +517,185 @@ const handleUserRouter = (req, res) => {
   }
 }
 ```
+####  session
+cookie存储userid, server端的session存储用户信息
+```JavaScript
+// index.js
+// session 数据
+const SESSION_DATA = {}
+
+// 解析 session
+let needSetCookie = false
+let userId = req.cookie.userid
+if(userId) {
+  if(!SESSION_DATA[userId]) {
+    SESSION_DATA[userId] = {}
+  }
+} else {
+  needSetCookie = true
+  userId = `${Date.now()}_${Math.random()}`
+  SESSION_DATA[userId] = {}
+}
+req.session = SESSION_DATA[userId]
+
+// 处理 post data
+getPostData(req).then(postData => {
+  req.body = postData    
+  // 处理blog路由
+  const blogResult = handleBlogRouter(req, res)    
+  if(blogResult) {
+    blogResult.then(blogData => {
+      // needSetCookie
+      if(needSetCookie) {
+        res.setHeader('Set-Cookie', `userid=${userId}; path=/; HttpOnly; expires=${setCookieExpire()}`)
+      }
+      res.end(
+        JSON.stringify(blogData)
+      )
+    })
+    return
+  }
+  // ...
+}
 
 
-#### cookie、 session
+// router/user.js
+const handleUserRouter = (req, res) => {
+  const { method, url, path } = req
+  // 登录
+  if(method==='POST' && path==='/api/user/login') {
+    const { username, password } = req.body
+    const result = loginCheck(username, password)
+    return result.then(userData => {
+      if(userData.username) {
+        // 设置session
+        req.session.username = userData.username
+        
+        // 操作cookie
+        // res.setHeader('Set-Cookie', `username=${userData.username}; path=/; HttpOnly; expires=${setCookieExpire()}`)
+        return new SuccessModel(userData)
+      }
+      return new ErrorModel('登录失败')
+    })
+  }
+  // ...
+}
+```
+
 #### session 写入redis
+##### redis
+Remote Dictionary Server是一个由Salvatore Sanfilippo写的key-value存储系统。
+Redis是一个开源的使用ANSI C语言编写、遵守BSD协议、支持网络、可基于内存亦可持久化的日志型、Key-Value数据库，并提供多种语言的API。
+它通常被称为数据结构服务器，因为值（value）可以是 字符串(String), 哈希(Hash), 列表(list), 集合(sets) 和 有序集合(sorted sets)等类型。
+
+##### 为何将session 写入redis
+问题：目前session是js变量，放在nodejs进程内存中。进程内存有限，访问量过大，可能内存暴增；正式线上运行是多进程，进程间无法共享。
+方案：将web server和redis 拆分为两个单独的服务，双方都是独立可扩展的。
+解释：redis是web server最常用的缓存数据库，数据存放在内存中，相比硬盘中的mysql，访问速度快快几个量级。但成本更高，可存储数据量更小，断电即消失。
+原因: session访问频繁，对性能要求极高。session可忽略断电丢失数据的问题，重新获取即可。session相比mysql数据量不会太大。
+
+##### redis 安装使用
+安装：brew install redis
+启动：redis-server、redis-cli  (6379是redis 服务端口)
+设置：set myname sea  (在redis-cli中，下同)
+获取： get myname
+获取所有：keys *
+删除： del myname
+
+##### nodejs连接redis
+redis-server 启动redis
+npm i redis  安装redis依赖
+
+```JavaScript
+// redis-test demo
+const redis = require('redis')
+
+// 创建客户端
+const redisClient = redis.createClient(6379, '127.0.0.1')
+
+redisClient.on('error', err => {
+  console.error(err)
+})
+
+
+redisClient.set('myname', 'sea', redis.print)
+redisClient.get('myname', (err, val) => {
+  if(err) {
+    console.error(err)
+    return
+  }
+  console.log('val', val)
+  // 退出
+  redisClient.quit()
+})
+```
+
+##### nodejs连接redis 封装工具函数
+```JavaScript
+// config/db.js  配置redis常量
+let REDIS_CONF = {}
+
+if(env==='dev') {
+  // redis
+  REDIS_CONF = {
+    host: '127.0.0.1',
+    port: '6379',
+  }
+  // ...
+}
+
+
+// db/redis.js  封装成工具函数
+const redis = require('redis')
+const { REDIS_CONF } = require('../config/db')
+
+// 创建redis客户端
+const redisClient = redis.createClient(REDIS_CONF.port, REDIS_CONF.host)
+
+// 监听error
+redisClient.on('error', err => {
+  console.error(err)
+})
+
+// 设置
+function setRedisVal(key, val) {
+  if(typeof val === 'object') {
+    val = JSON.stringify(val)
+  }
+  redisClient.set(key, val, redis.print)
+}
+
+// 获取
+function getRedisVal(key) {
+  return new Promise((resolve, reject) => {
+    redisClient.get(key, (err, val) => {
+      if(err) {
+        reject(err)
+        return
+      }
+      if(val===null) {
+        resolve(null)
+        return
+      }
+      try {
+        // 优先返回JSON 格式
+        resolve(JSON.parse(val))
+      } catch(e) {
+        resolve(val)
+      }
+      // redisClient.quit()
+    })
+  })
+}
+
+module.exports = {
+  setRedisVal,
+  getRedisVal,
+}
+```
+
+
+
 #### 登录nginx反向代理
 
 
