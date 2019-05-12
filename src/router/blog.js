@@ -9,11 +9,6 @@ const { loginCheckSession } = require('../utils')
 const handleBlogRouter = (req, res) => {
   const { method, url, path } = req
 
-  // 登录验证
-  const loginCheckResult = loginCheckSession(req)
-  if(loginCheckResult) {  // 有值，说明未登录
-    return loginCheckSession
-  }
 
   // 获取博客列表
   if(method==='GET' && path==='/api/blog/list') {
@@ -36,6 +31,12 @@ const handleBlogRouter = (req, res) => {
 
   // 新建一篇博客
   if(method==='POST' && path==='/api/blog/new') {
+    // 登录验证
+    const loginCheckResult = loginCheckSession(req)
+    if(loginCheckResult) {  // 有值，说明未登录
+      return loginCheckSession
+    }
+
     const author = req.session.username  // 替换req.query.author
     req.body.author = author
     
@@ -61,6 +62,12 @@ const handleBlogRouter = (req, res) => {
 
   // 删除一篇博客
   if(method==='POST' && path==='/api/blog/del') {
+    // 登录验证
+    const loginCheckResult = loginCheckSession(req)
+    if(loginCheckResult) {  // 有值，说明未登录
+      return loginCheckSession
+    }
+
     const id = req.query.id
     // const author = req.query.author
     const author = req.session.username  // 替换req.query.author

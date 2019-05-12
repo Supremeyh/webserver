@@ -695,6 +695,68 @@ module.exports = {
 ```
 ##### session登录验证
 ```JavaScript
+// index.js
+const { setCookieVal } = require('./src/utils')
+const { setRedisVal, getRedisVal } = require('./src/db/redis')
+
+const serverHandler = (req, res) => {
+  // 设置返回数据格式 JSON
+  res.setHeader('Content-Type', 'application/json')
+
+  // 获取path 路由
+  const url = req.url
+  req.path = url.split('?')[0]
+
+  // 解析query
+  req.query = quertstring.parse(url.split('?')[1])
+  
+  // 解析cookie  处理成键值对 存入req.cookie中
+  const cookie = parseCookie(req)
+  req.cookie = cookie
+
+  // 解析 session
+  let needSetCookie = false
+  let userId = req.cookie.userid
+  if(!userId) {
+    needSetCookie = true
+    userId = `${Date.now()}_${Math.random()}`
+  }
+
+  // 将 sessionId 设置为 userId，后面的登录路由处理会用到
+  req.sessionId = userId
+
+  // 通过 userId 获取存储在 redis 中的数据
+  getRedisVal(req.sessionId)
+    .then(sessionData => {
+      if(sessionData===null) {
+        // 当对应的 sessionId 在 redis 中没有值的时，在 redis 中将其值设置为空对象
+        setRedisVal(req.sessionId, {})
+        req.session = {}
+      } else {
+        req.session = sessionData
+      }
+      return getPostData(req)
+    })
+    .then(postData => {
+      req.body = postData    
+      // 处理blog路由
+      const blogResult = handleBlogRouter(req, res)    
+      if(blogResult) {
+        blogResult.then(blogData => {
+          if(needSetCookie) {
+            setCookieVal(res, 'userid', userId)
+          }
+          res.end(
+            JSON.stringify(blogData)
+          )
+        })
+        return
+      }
+      // ...
+  })
+}
+
+
 // utils/index.js 统一的登录验证函数
 const loginCheckSession = (req) => {
   // session中没有username信息，则返回错误信息
@@ -732,7 +794,71 @@ const handleBlogRouter = (req, res) => {
 
 }
 
+
+// router/user.js
+const { setRedisVal } = require('../db/redis')
+
+const handleUserRouter = (req, res) => {
+  const { method, url, path } = req
+  // 登录
+  if(method==='POST' && path==='/api/user/login') {
+    const { username, password } = req.body
+    const result = loginCheck(username, password)
+    return result.then(userData => {
+      if(userData.username) {
+        // 设置session
+        req.session.username = userData.username
+        setRedisVal(req.sessionId, req.session)
+        return new SuccessModel(userData)
+      }
+      return new ErrorModel('登录失败')
+    })
+  }
+}
 ```
+##### 前后端联调
+登录功能依赖cookie，需要userid，必须要和浏览器联调
+cookie跨域不共享，前后端必须同域，使用nginx 做代理，让前后端同域
+开发前端网页
+
+##### nginx 
+高性能web服务器，开源免费。一般用于做静态服务、负载均衡、反向代理服务器。
+下载:mac brew install nginx 
+配置: /usr/local/etc/nginx/nginx.conf  (Mac) ，用vi 命令打开
+测试配置文件是否正确: nginx -t
+启动: nginx -s reload
+停止: nginx -s stop
+```JavaScript
+// /usr/local/etc/nginx/nginx.conf
+http {
+  server {
+    # 当访问 http://localhost:8080... 时生效
+    listen        8080;
+    server_name   localhost;
+    
+    # location / {
+    #  root       html;
+    #  index      index.html index.htm;
+    # }
+
+    # 静态文件 前端项目启动的端口
+    location / {
+      proxy_pass  http://localhost:8000;
+      # 使用Nginx对WebSocket进行反向代理, 表示请求服务器升级协议为WebSocket
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "Upgrade";
+    }
+
+    # server 后端项目启动的端口
+    location /api/ {
+      proxy_pass  http://localhost:3000;  
+      proxy_set_header Host $host;
+    }
+  }
+
+}
+```
+配置完成后，前端启动服务(如端口8000)，后端启动服务(端口3000)，浏览器访问 http://localhost:8080... 即可。
 
 #### 登录nginx反向代理
 
