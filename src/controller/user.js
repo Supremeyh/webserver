@@ -1,7 +1,12 @@
-const { execSql } = require('../db/mysql')
+const { execSql, escape } = require('../db/mysql')
 
 const loginCheck = (username, password) => {
-  let sql = `select * from users where username='${username}' and password='${password}';`
+  // 使用mysql的escape函数 防止sql注入
+  username = escape(username)
+  password = escape(password)
+  
+  // let sql = `select * from users where username='${username}' and password='${password}';`
+  let sql = `select * from users where username=${username} and password=${password};`
   return execSql(sql).then(arr => {
     return arr[0] || {}
   })

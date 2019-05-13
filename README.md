@@ -1043,3 +1043,37 @@ rl.on('close', () => {
   console.log('使用chrome占比 ' + chromeNum/total)
 })
 ```
+
+### 安全
+#### xss攻击、sql注入
+xss 攻击: 窃取前端的cookie
+
+sql 注入: 窃取数据库内容
+最原始、最简单的攻击，自从web2.0就有了sql注入攻击
+方式:输入一个sql片段，最终拼接成一段攻击代码
+预防: 使用mysql的escape函数处理输入内容即可
+```JavaScript
+// controller/user.js 
+// 登录时账号密码输入如下（在mysql--表示注释）
+select * from users where username='zhangsan';delete from users; -- 'and password='123';
+```
+上面代码发生sql注入。使用mysql的escape，并去掉变量的双引号
+```JavaScript
+// db/mysql.js
+module.exports = {
+  execSql,
+  escape: mysql.escape
+}
+
+// controller/user.js
+const { execSql, escape } = require('../db/mysql')
+// 加上
+username = escape(username)
+password = escape(password)
+
+// let sql = `select * from users where username='${username}' and password='${password}';`
+let sql = `select * from users where username=${username} and password=${password};`  // 去掉变量的双引号
+```
+
+
+密码加密: 保证用户信息安全
