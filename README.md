@@ -1,5 +1,7 @@
 > create by sea, 2019.5.7
 
+## Node.js从零开发Web Server博客项目
+
 ### nodejs 介绍
 #### 下载和安装
 * 普通方式
@@ -981,8 +983,63 @@ const serverHandler = (req, res) => {
 ```
 之后，刷新页面，即可把请求写到日志
 
+#### 日志拆分 crontab
+日志慢慢积累，放在一个文件不好处理，一般按时间拆分日志，如2019-05-13.access.log
+实现方式: linux的crontab命令，即定时任务
+crontab设置定时任务，格式: `*****command` 分-时-日-月-星期几
+流程：将access.log拷贝并重命名为2019-05-13.access.log，清空access.log文件，继续积累日志
+创建utils/copy.sh脚本
+```sh
+#!/bin/sh
+cd /Users/sea/Desktop/OnGoing/HelloWorld/FullStack/Node/webserver/src/logs
+cp access.log $(date +%Y-%m-%d).access.log
+echo "" > access.log
+```
+cli 执行 sh src/utils/copy.sh 即可实现将access.log日志拆分到 2019-05-13.access.log
 
+cli 执行 crontab -e ，会打开编译器，输入
+```Javascript
+* 0 * * * sh /Users/sea/Desktop/OnGoing/HelloWorld/FullStack/Node/webserver/src/utils/copy.sh
+```
+wq保存，显示crontab:installing new crontab， 则完成每天凌晨0点0分 执行日志拆分脚本
+crontab -l 查看当前任务列表
 
+#### 日志分析 readline(
+比如针对access.log 日志，分析使用chrome的占比
+日志按行存储，一行就是一条日志
+使用nodejs的readline(基于stream，效率高)
+```Javascript
+// utils/readline.js
+const fs = require('fs')
+const path = require('path')
+const readline = require('readline')
 
+// 获取access.log 文件路径名
+const fileName = path.join(__dirname, '../', 'logs', 'access.log')
+// 创建 read stream
+const readStream = fs.createReadStream(fileName)
 
+// 创建readline对象
+const rl = readline.createInterface({
+  input: readStream
+})
 
+let total = 0
+let chromeNum = 0
+
+// 逐行读取
+rl.on('line', lineData => {
+  if(!lineData) return
+  total++
+
+  let arr = lineData.split('--')
+  if(arr[2] && arr[2].includes('Chrome')) {
+    chromeNum++
+  }
+})
+
+// 监听读取完成
+rl.on('close', () => {
+  console.log('使用chrome占比 ' + chromeNum/total)
+})
+```
