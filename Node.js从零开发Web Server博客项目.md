@@ -146,13 +146,14 @@ const quertstring = require('querystring')
 const handleUserRouter = require('./src/router/user')
 const handleBlogRouter = require('./src/router/blog')
 
-// 处理 post data
-const getPostData = (req) => {  
+// 处理 post body data
+const getPostBodyData = (req) => {  
   return new Promise((resolve, reject) => {
     if(req.method !== 'POST') {
       resolve({})
     }
-    if(req.headers['content-type'] !== 'application/json') {
+    if(!req.headers['content-type'].includes('application/json')) { 
+    // 实际上req.headers['content-type'] 为 'application/json;charset=UTF-8'
       resolve({})
     }
 
@@ -181,8 +182,8 @@ const serverHandler = (req, res) => {
   // 解析query
   req.query = quertstring.parse(url.split('?')[1])
 
-  // 处理 post data
-  getPostData(req).then(postData => {
+  // 处理 post body data
+  getPostBodyData(req).then(postData => {
     req.body = postData    
     // 处理blog路由
     const blogData = handleBlogRouter(req, res)
@@ -453,7 +454,7 @@ if(method==='GET' && path==='/api/blog/list') {
 }
 
 // index.js
-getPostData(req).then(postData => {
+getPostBodyData(req).then(postData => {
     req.body = postData    
     // 处理blog路由
     // const blogData = handleBlogRouter(req, res)
@@ -538,8 +539,8 @@ if(userId) {
 }
 req.session = SESSION_DATA[userId]
 
-// 处理 post data
-getPostData(req).then(postData => {
+// 处理 post body data
+getPostBodyData(req).then(postData => {
   req.body = postData    
   // 处理blog路由
   const blogResult = handleBlogRouter(req, res)    
@@ -735,7 +736,7 @@ const serverHandler = (req, res) => {
       } else {
         req.session = sessionData
       }
-      return getPostData(req)
+      return getPostBodyData(req)
     })
     .then(postData => {
       req.body = postData    
@@ -776,7 +777,7 @@ const handleBlogRouter = (req, res) => {
   // 登录验证  放在handleBlogRouter的顶部做成拦截器，保证所有后期请求都需先登录
   const loginCheckResult = loginCheckSession(req)
   if(loginCheckResult) {  // 有值，说明未登录
-    return loginCheckSession
+    return loginCheckResult
   }
 
   // 新建一篇博客  比如新建博客时，需要校验author，从session的username取出，保证登录的账号和author是同一个人，不会删除其他人的博客

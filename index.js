@@ -15,17 +15,16 @@ const serverHandler = (req, res) => {
   // 获取path 路由
   const url = req.url
   req.path = url.split('?')[0]
-
   // 解析query
   req.query = quertstring.parse(url.split('?')[1])
   
   // 解析cookie  处理成键值对 存入req.cookie中
   const cookie = parseCookie(req)
   req.cookie = cookie
-
-  // 解析 session
+  
+  // 解析session
   let needSetCookie = false
-  let userId = req.cookie.userid
+  let userId = req.cookie.userid  
   if(!userId) {
     needSetCookie = true
     userId = `${Date.now()}_${Math.random()}`
@@ -36,18 +35,19 @@ const serverHandler = (req, res) => {
 
   // 通过 userId 获取存储在 redis 中的数据
   getRedisVal(req.sessionId)
-    .then(sessionData => {
-      if(sessionData===null) {
+    .then(sessionData => {            
+      if(sessionData==null) {
         // 当对应的 sessionId 在 redis 中没有值的时，在 redis 中将其值设置为空对象
         setRedisVal(req.sessionId, {})
         req.session = {}
       } else {
         req.session = sessionData
       }
-      return getPostData(req)
+      return getPostBodyData(req)
     })
-    .then(postData => {
-      req.body = postData    
+    .then(postData => {      
+      req.body = postData   
+
       // 处理blog路由
       const blogResult = handleBlogRouter(req, res)    
       if(blogResult) {
@@ -55,9 +55,7 @@ const serverHandler = (req, res) => {
           if(needSetCookie) {
             setCookieVal(res, 'userid', userId)
           }
-          res.end(
-            JSON.stringify(blogData)
-          )
+          res.end(JSON.stringify(blogData))
         })
         return
       }
@@ -70,9 +68,7 @@ const serverHandler = (req, res) => {
             setCookieVal(res, 'userid', userId)
           }
           if(userData) {
-            res.end(
-              JSON.stringify(userData)
-            )
+            res.end(JSON.stringify(userData))
           }
         })
         return
@@ -87,16 +83,19 @@ const serverHandler = (req, res) => {
 }
 
 
-// 处理 post data
-const getPostData = (req) => {  
+// 处理 post body data
+const getPostBodyData = (req) => {    
   return new Promise((resolve, reject) => {
     if(req.method !== 'POST') {
       resolve({})
+      return
     }
-    if(req.headers['content-type'] !== 'application/json') {
+    if(!req.headers['content-type'].includes('application/json')) { 
+      // 实际上req.headers['content-type'] 为 'application/json;charset=UTF-8'
       resolve({})
+      return
     }
-
+    
     let postData = ''
     req.on('data', chunk => {
       postData += chunk.toString()
@@ -115,12 +114,12 @@ const getPostData = (req) => {
 // 解析cookie  处理成键值对 存入req.cookie中
 const parseCookie = (req) => {
   let cookie = {}
-  const cookieStr = req.headers.cookie || ''
+  let cookieStr = req.headers.cookie || ''  // k1=v1;k2=v2
   cookieStr.split(';').forEach(item => {
     if(!item) return
     const arr = item.split('=')
     const key = arr[0].trim()
-    const val = arr[1].trim()
+    const val = arr[1]
     cookie[key] = val
   })
   return cookie

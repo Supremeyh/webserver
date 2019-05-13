@@ -7,13 +7,16 @@ const handleUserRouter = (req, res) => {
   // 登录
   if(method==='POST' && path==='/api/user/login') {
     const { username, password } = req.body
-    const result = loginCheck(username, password)
-    return result.then(userData => {
+    const loginResult = loginCheck(username, password)
+    return loginResult.then(userData => {      
       if(userData.username) {
-        // 设置session
+        // 设置 session
         req.session.username = userData.username
+                
+        // 同步到 redis
         setRedisVal(req.sessionId, req.session)
-        return new SuccessModel(userData)
+
+        return new SuccessModel(userData, '登录成功')
       }
       return new ErrorModel('登录失败')
     })

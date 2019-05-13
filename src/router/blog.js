@@ -12,8 +12,20 @@ const handleBlogRouter = (req, res) => {
 
   // 获取博客列表
   if(method==='GET' && path==='/api/blog/list') {
-    const author = req.query.author || ''
-    const keyword = req.query.keyword || ''    
+    let author = req.query.author || ''
+    const keyword = req.query.keyword || '' 
+    
+    // 管理员界面
+    if(req.query.isadmin) {
+      // 登录验证
+      const loginCheckResult = loginCheckSession(req)
+      if(loginCheckResult) {  // 有值，说明未登录
+        return loginCheckResult
+      }
+      // 强制只查询登陆用户自己的博客
+      author = req.session.username
+    }
+
     const result = getList(author, keyword)
     return result.then(listData => {
       return new SuccessModel(listData)
@@ -34,7 +46,7 @@ const handleBlogRouter = (req, res) => {
     // 登录验证
     const loginCheckResult = loginCheckSession(req)
     if(loginCheckResult) {  // 有值，说明未登录
-      return loginCheckSession
+      return loginCheckResult
     }
 
     const author = req.session.username  // 替换req.query.author
@@ -49,6 +61,12 @@ const handleBlogRouter = (req, res) => {
 
   // 更新一篇博客
   if(method==='POST' && path==='/api/blog/update') {
+    // 登录验证
+    const loginCheckResult = loginCheckSession(req)
+    if(loginCheckResult) {  // 有值，说明未登录
+      return loginCheckResult
+    }
+    
     const id = req.query.id
     const result = updateBlog(id, req.body)
     return result.then(val => {
@@ -65,7 +83,7 @@ const handleBlogRouter = (req, res) => {
     // 登录验证
     const loginCheckResult = loginCheckSession(req)
     if(loginCheckResult) {  // 有值，说明未登录
-      return loginCheckSession
+      return loginCheckResult
     }
 
     const id = req.query.id

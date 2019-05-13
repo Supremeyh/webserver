@@ -25,7 +25,7 @@ function getRedisVal(key) {
         reject(err)
         return
       }
-      if(val===null) {
+      if(val==null) {
         resolve(null)
         return
       }
