@@ -694,7 +694,7 @@ module.exports = {
   getRedisVal,
 }
 ```
-##### session登录验证
+##### session登录验证 redis
 ```JavaScript
 // index.js
 const { setCookieVal } = require('./src/utils')
@@ -861,10 +861,125 @@ http {
 ```
 配置完成后，前端启动服务(如端口8000)，后端启动服务(端口3000)，浏览器访问 http://localhost:8080... 即可。
 
-#### 登录nginx反向代理
+
+### 日志 
+系统没有日志，就等于人没有眼睛
+分类: 访问日志 access log、自定义日志(自定义事件、错误记录等)
+nodejs文件操作，nodejs stream
+日志拆分、内容分析
+
+#### nodejs文件操作
+```JavaScript
+// file-test demo
+// file-test/test.js
+const fs = require('fs')
+const path = require('path')
+
+const fileName = path.resolve(__dirname, 'data.txt')  // file-test/data.txt
+
+// 读
+fs.readFile(fileName, (err, data) => {
+  if(err) {
+    console.error(err)
+    return
+  }
+  // data是二进制数据  <Buffer 68 65 6c 6c 6f 20 0a 7a 7a 6c 61 70 61 0a 70 61 70 61 61 2d 2d 0a 7a 7a 7a 61>
+  console.log(data.toString())
+})
+
+// 写
+let content = 'new ...'
+const opt = {
+  flag: 'a',  // 追加a append, 覆盖w write
+}
+
+fs.writeFile(fileName, content, opt, (err) => {
+  if(err) {
+    console.error(err)
+  }
+
+})
+
+// 判断文件是否存在
+fs.exists(fileName, (exist) => {
+  console.log('exist', exist)  // true
+})
+```
+#### stream
+IO操作(网络、文件)的性能瓶颈,突出特点就是慢
+标准输入输出  process.stdin.pipe(process.stdout)
+req.pipe(res) 类比成两个水桶，连接管道
+```JavaScript
+// file-test demo
+// file-test/test.js
+const fs = require('fs')
+const path = require('path')
+
+const fileName1 = path.resolve(__dirname, 'data.txt')
+const fileName2 = path.resolve(__dirname, 'data-bak.txt')
+
+const readStream = fs.createReadStream(fileName1)
+const writeStream = fs.createWriteStream(fileName2)
+
+readStream.pipe(writeStream)
+
+readStream.on('data', chunk => {
+  console.log(chunk.toString())
+})
+
+readStream.on('end', () => {
+  console.log('ok')
+})
+```
+#### 写日志
+目录logs下，并新建 access.log、event.log、error.log 三个文件
+```JavaScript
+// utils/log.js  
+const fs = require('fs')
+const path = require('path')
 
 
+function createWriteStream (fileName) {
+  const fullName =  getFullName(fileName)
+  const writeStream = fs.createWriteStream(fullName, {
+    flags: 'a'
+  })
+  return writeStream
+}
 
+function writeLog(writeStream, log) {
+  writeStream.write(log + '\n')
+}
+
+
+// 获取完整文件路径名
+function getFullName(fileName) {
+  const fullName = path.join(__dirname, '../', 'logs', fileName)  
+  return fullName
+}
+
+// 访问日志
+const accessWriteStream = createWriteStream('access.log')
+
+function writeAccessLog(log) {
+  writeLog(accessWriteStream, log)
+}
+
+module.exports = {
+  writeAccessLog
+}
+
+
+// index.js
+const { writeAccessLog } = require('./src/utils/log')
+
+const serverHandler = (req, res) => {
+  // 记录 access log 
+  writeAccessLog(`${req.method}--${req.url}--${req.headers['user-agent']}--${Date.now()}`)
+  // ...
+}
+```
+之后，刷新页面，即可把请求写到日志
 
 
 

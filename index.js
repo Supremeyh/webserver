@@ -1,4 +1,3 @@
-// process.env.NODE_ENV
 const quertstring = require('querystring')
 
 const handleUserRouter = require('./src/router/user')
@@ -7,8 +6,13 @@ const handleBlogRouter = require('./src/router/blog')
 const { setCookieVal } = require('./src/utils')
 const { setRedisVal, getRedisVal } = require('./src/db/redis')
 
+const { writeAccessLog } = require('./src/utils/log')
+
 
 const serverHandler = (req, res) => {
+  // 记录 access log 
+  writeAccessLog(`${req.method}--${req.url}--${req.headers['user-agent']}--${Date.now()}`)
+
   // 设置返回数据格式 JSON
   res.setHeader('Content-Type', 'application/json')
 
