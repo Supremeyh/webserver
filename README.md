@@ -59,7 +59,7 @@ npm init -y  初始化package.json
 考虑内存和CPU (优化、扩展)， server端要承载很多请求，内存和CPU 都是稀缺资源。stream 写日志，使用redis 存session
 日志记录, 记录、存储、分析日志，否则是盲人摸象
 安全，如越权操作、数据库攻击、xss攻击
-集群和服务拆分
+集群和服务拆分  
 
 
 ### 项目需求分析 和 技术方案
@@ -1004,7 +1004,7 @@ cli 执行 crontab -e ，会打开编译器，输入
 wq保存，显示crontab:installing new crontab， 则完成每天凌晨0点0分 执行日志拆分脚本
 crontab -l 查看当前任务列表
 
-#### 日志分析 readline(
+#### 日志分析 readline
 比如针对access.log 日志，分析使用chrome的占比
 日志按行存储，一行就是一条日志
 使用nodejs的readline(基于stream，效率高)
@@ -1045,10 +1045,31 @@ rl.on('close', () => {
 ```
 
 ### 安全
-#### xss攻击、sql注入
-xss 攻击: 窃取前端的cookie
+#### xss 攻击: 窃取前端的cookie
+方式: 在页面展示内容中掺杂js代码，以获取网页信息
+预防: 转换生成js的特殊字符
+```Javascript
+& ->  &amp;
+< ->  &lt;
+> ->  &gt;
+' ->  &#x27;
+" ->  &quot;
+```
+使用xss库
+npm i xss --save
+```Javascript
+// controller/blog.js
+const xss = require('xss')
 
-sql 注入: 窃取数据库内容
+const newBlog = (blogData={}) => {
+  const { title, content, author, createtime } = blogData
+  // 防止xss攻击
+  title = xss(title)
+  // ...
+}
+```
+
+#### sql 注入: 窃取数据库内容
 最原始、最简单的攻击，自从web2.0就有了sql注入攻击
 方式:输入一个sql片段，最终拼接成一段攻击代码
 预防: 使用mysql的escape函数处理输入内容即可
@@ -1074,6 +1095,50 @@ password = escape(password)
 // let sql = `select * from users where username='${username}' and password='${password}';`
 let sql = `select * from users where username=${username} and password=${password};`  // 去掉变量的双引号
 ```
+#### 密码加密: 保证用户信息安全
+万一数据库被攻破，最不该泄露的就是用户账号密码信息
+方式: 是用户账号密码，再去登录其他系统
+预防: 密码加密，不使用明文
+```JavaScript
+// utils/crypto.js
+const crypto = require('crypto')
+// 密钥
+const SECRET_KEY = 'HELLO_Node@2019'
+// md5 加密
+function md5(content) {
+  let md5 = crypto.createHash('md5')
+  return md5.update(content).digest('hex')
+}
+// 加密函数
+function generatePassword(password) {
+  const str = `password=${password}&key=${SECRET_KEY}`
+  return md5(str)
+}
 
+module.exports = {
+  generatePassword
+}
 
-密码加密: 保证用户信息安全
+// 更新数据库所有用户密码为密文（其实应该在注册时就对密码加密，让注册和登录对上，此处在数据库编译器里执行只是测试加密）
+update users set `password`='a04db8f90de6663c06460b383ad78eae'
+
+// controller/user.js  
+const { generatePassword} = require('../utils/crypto')
+
+const loginCheck = (username, password) => {
+  // 密码加密  注意要先加密再escape的顺序，不然sql的password单引号丢失，导致sql语句执行错误
+  password = generatePassword(password)
+
+  // 使用mysql的escape函数 防止sql注入
+  username = escape(username)
+  password = escape(password)
+
+  let sql = `select * from users where username=${username} and password=${password};`
+  // ...
+}
+```
+
+### 原生开发总结
+流程图：客户端 -> nginx反向代理 -> / server静态文件、/api/ ... -> 日志记录stream、crontab -> 路由处理 -> 登录校验redis -> 用户信息redis -> 数据处理controller -> 数据存储mysql
+
+开启服务: 启动后端服务3000端口、启动redis-server、启动nginx、启动数据库mysql、启动前端页面8000端口，打开前端页面访问http 8080端口

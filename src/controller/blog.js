@@ -1,4 +1,5 @@
 const { execSql } = require('../db/mysql')
+const xss = require('xss')
 
 const getList = (author, keyword) => {
   let sql = `select * from blogs where 1=1 `
@@ -30,6 +31,10 @@ const getDetail = (id) => {
 
 const newBlog = (blogData={}) => {
   const { title, content, author, createtime } = blogData
+  // 防止xss攻击
+  title = xss(title)
+  content = xss(content)
+
   let sql = `insert into blogs (title, content, author, createtime) values ('${title}', '${content}', '${author}', '${createtime}');`
   return execSql(sql).then(insertData => {
     return {
