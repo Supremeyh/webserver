@@ -1148,4 +1148,9 @@ const loginCheck = (username, password) => {
 express 是nodejs最常用的web server框架， Fast, unopinionated, minimalist web framework for node.
 
 
+#### 下载、安装
+使用脚手架express-generator
+npm i express-generator -g  全局安装脚手架
+express webserver 生成项目
+npm i && npm start
 
