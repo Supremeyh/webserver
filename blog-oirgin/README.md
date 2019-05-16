@@ -1143,9 +1143,3 @@ const loginCheck = (username, password) => {
 
 开启服务: 启动后端服务3000端口、启动redis-server、启动nginx、启动数据库mysql、启动前端页面8000端口，打开前端页面访问http 8080端口
 
-
-### 使用 express 重构博客项目
-express 是nodejs最常用的web server框架， Fast, unopinionated, minimalist web framework for node.
-
-
-
