@@ -1149,8 +1149,25 @@ express 是nodejs最常用的web server框架， Fast, unopinionated, minimalist
 
 
 #### 下载、安装
-使用脚手架express-generator
-npm i express-generator -g  全局安装脚手架
-express webserver 生成项目
-npm i && npm start
+express-generator  使用脚手架
+```JavaScript
+npm i express-generator -g  // 全局安装脚手架
+express blog-express  // 生成项目
+
+npm i cross-env --save-dev // 安装cross-env
+
+// 配置package.json (部分)
+"scripts": {
+  "start": "node ./bin/www",
+  "dev": "cross-env NODE_ENV=development nodemon ./bin/www",
+  "prod": "cross-env NODE_ENV=production nodemon ./bin/www"
+},
+"devDependencies": {
+  "cross-env": "^5.2.0"
+}
+
+npm i  // 安装依赖
+npm run dev // 启动项目
+```
+
 
