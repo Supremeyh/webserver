@@ -1175,9 +1175,9 @@ npm run dev // 启动项目
 安装插件 mysql、xss
 config、mysql、controller、model/resModel相关代码可以复用blog-origin原生开发代码，要保证相关资源的引入和路径修改
 
-记得启动mysql和redis-server
+记得启动nginx、mysql 和 redis-server
 
-##### 登录，处理session
+##### 处理session
 使用express-session和connect-redis，简单方便
 req.session保存登录信息，登录校验做成express中间件
 
@@ -1197,6 +1197,80 @@ app.use(session({
   }
 }))
 ```
+
+##### 使用session登录
+```JavaScript
+// routes/login.js
+const express = require('express')
+const router = express.Router()
+const { loginCheck } = require('../controller/login')
+const { SuccessModel, ErrorModel } = require('../model/resModel')
+
+router.post('/login', (req, res, next) => {
+  // 登录
+  const { username, password } = req.body
+  const loginResult = loginCheck(username, password)
+  return loginResult.then(userData => {      
+    if(userData.username) {
+      // 设置 session  会自动同步到redis
+      req.session.username = userData.username
+              
+      // 同步到 redis  这步不需要了
+      // setRedisVal(req.sessionId, req.session)
+
+      // return new SuccessModel(userData, '登录成功')
+      // 改成, 失败下同
+      res.json(new SuccessModel(userData, '登录成功'))
+      return
+    }
+    res.json(new ErrorModel('登录失败'))
+  })
+
+})
+
+module.exports = router
+```
+其中，setRedisVal 不再需要,  设置 session时 会自动同步到redis。返回结果改成res.json() 在return的方式。
+之后，使用postman，参数输入账号密码可测试登录接口， 如zhangsan, 123 返回登录成功。 或者，启动nginx 通过前端服务访问。
+
+##### 连接redis, session存入redis
+npm i redis connect-redis --save
+```JavaScript
+// db/redis.js  创建redisClient
+const redis = require('redis')
+const { REDIS_CONF } = require('../config/db')
+
+// 创建redis客户端
+const redisClient = redis.createClient(REDIS_CONF.port, REDIS_CONF.host)
+
+// 监听error
+redisClient.on('error', err => {
+  console.error(err)
+})
+
+module.exports = redisClient
+
+
+// app.js
+var redisClient = require('./db/redis')
+var redisStore = require('connect-redis')(session)
+
+// session
+const sessionStore = new redisStore({
+  client: redisClient
+})
+app.use(session({
+  secret: SECRET_KEY,
+  cookie: {
+    path: '/',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000
+  },
+  store: sessionStore  // 存入store
+}))
+```
+这步要启动redis-server
+
 
 ##### 记录日志
 

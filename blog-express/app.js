@@ -5,6 +5,8 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var session = require('express-session')
 var { SECRET_KEY } = require('./utils/crypto')
+var redisClient = require('./db/redis')
+var redisStore = require('connect-redis')(session)
 
 // var indexRouter = require('./routes/index');
 // var usersRouter = require('./routes/users');
@@ -24,13 +26,17 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // session
+const sessionStore = new redisStore({
+  client: redisClient
+})
 app.use(session({
   secret: SECRET_KEY,
   cookie: {
     path: '/',
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000
-  }
+  },
+  store: sessionStore
 }))
 
 // app.use('/', indexRouter);
