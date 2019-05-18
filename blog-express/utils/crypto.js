@@ -17,5 +17,6 @@ function generatePassword(password) {
 
 
 module.exports = {
-  generatePassword
+  generatePassword,
+  SECRET_KEY
 }

@@ -1171,13 +1171,36 @@ npm run dev // 启动项目
 ```
 
 #### 开发接口
-##### 初始化环境
+##### 初始化环境、路由
 安装插件 mysql、xss
-mysql、controller、resModel相关代码可以复用
+config、mysql、controller、model/resModel相关代码可以复用blog-origin原生开发代码，要保证相关资源的引入和路径修改
 
+记得启动mysql和redis-server
 
-##### 初始化路由，并实现登录
+##### 登录，处理session
+使用express-session和connect-redis，简单方便
+req.session保存登录信息，登录校验做成express中间件
+
+npm i express-session --save
+```JavaScript
+// app.js
+var session = require('express-session')
+var { SECRET_KEY } = require('./utils/crypto')
+
+// session  在路由前面配置
+app.use(session({
+  secret: SECRET_KEY,
+  cookie: {
+    path: '/',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000
+  }
+}))
+```
+
 ##### 记录日志
+
+
 
 
 
