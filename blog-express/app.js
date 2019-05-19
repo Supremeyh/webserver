@@ -41,7 +41,8 @@ app.use(session({
 
 // app.use('/', indexRouter);
 // app.use('/users', usersRouter);
-app.use('/login', loginRouter);
+// app.use('/login', loginRouter);
+app.use('/api/user', loginRouter);
 app.use('/api/blog', blogRouter);
 
 // catch 404 and forward to error handler

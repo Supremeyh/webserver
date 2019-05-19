@@ -1271,6 +1271,45 @@ app.use(session({
 ```
 这步要启动redis-server
 
+查看redis: 启动redis-cli -> 先清空flushdb -> keys * 返回为空 -> "sess:W..y " ->  get sess:W..y 没有username->启动前端8081 -> nginx代理 8080登录 -> get sess:W..y 有username
+
+##### 登录中间件
+新建middleware/loginCheckSession.js 文件, loginCheckResult中间件，判定session中是否有username。 之后，在需要登录校验的接口调用中间件。
+```JavaScript
+// middleware/loginCheckSession   loginCheckResult中间件
+const { ErrorModel } = require('../model/resModel')
+
+const loginCheckSession = (req, res, next) => {
+  if(req.session.username) {
+    next()
+    return
+  }
+  res.json(new ErrorModel('未登录'))
+}
+
+module.exports = loginCheckSession
+
+
+// routes/blog.js  调用
+const { loginCheckSession } = require('../middleware/loginCheckSession')
+
+router.get('/list', (req, res, next) => {
+  let author = req.query.author || ''
+  const keyword = req.query.keyword || '' 
+  // 管理员界面
+  if(req.query.isadmin) {
+    // 登录验证
+    const loginCheckResult = loginCheckSession(req)
+    if(loginCheckResult) {  // 有值，说明未登录
+      return loginCheckResult
+    }
+    // 强制只查询登陆用户自己的博客
+    author = req.session.username
+  }
+  // ...
+
+})
+```
 
 ##### 记录日志
 

@@ -11,9 +11,7 @@ router.post('/login', (req, res, next) => {
     if(userData.username) {
       // 设置 session 会自动同步到redis
       req.session.username = userData.username
-              
-      // 同步到 redis
-      // setRedisVal(req.sessionId, req.session)
+            
       res.json(new SuccessModel(userData, '登录成功'))
       return
     }
