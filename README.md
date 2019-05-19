@@ -1291,17 +1291,16 @@ module.exports = loginCheckSession
 
 
 // routes/blog.js  调用
-const { loginCheckSession } = require('../middleware/loginCheckSession')
+const loginCheckSession = require('../middleware/loginCheckSession')
 
-router.get('/list', (req, res, next) => {
-  let author = req.query.author || ''
-  const keyword = req.query.keyword || '' 
+router.get('/list', loginCheckSession, (req, res, next) => {
+  let author = req.query.author
+  const keyword = req.query.keyword
   // 管理员界面
   if(req.query.isadmin) {
-    // 登录验证
-    const loginCheckResult = loginCheckSession(req)
-    if(loginCheckResult) {  // 有值，说明未登录
-      return loginCheckResult
+    if(req.session.username==null) {
+      res.json(new ErrorModel('未登录'))
+      return
     }
     // 强制只查询登陆用户自己的博客
     author = req.session.username
@@ -1311,7 +1310,22 @@ router.get('/list', (req, res, next) => {
 })
 ```
 
+##### 开发路由，获取博客详情等
+与以上登录类似，以获取博客详情为例, 更新、删除等类似
+```JavaScript
+// routes/blog.js
+// 获取博客详情
+router.get('/detail', (req, res, next) => {
+  const id = req.query.id
+  let detailResult = getDetail(id)
+  return detailResult.then(detailData => {
+    res.json(new SuccessModel(detailData))
+  })
+})
+```
+
 ##### 记录日志
+
 
 
 
