@@ -1351,20 +1351,15 @@ if(ENV !=='production') {
 }
 ```
 
-##### 小结
-使用express框架与原生开发区别:
-写法上发生改变，如req.query、req.json，可直接获取写入，不需要自己写入； 
-存储session到redis 使用 express-session、connect-redis，登录中间件;
-记录日志，使用morgan
-
 ##### express 中间件原理
 app.use() 注册中间件，先收集起来
 遇到http请求，根据method和path判断触发哪些
 实现next机制，即上一个通过next触发下一个
-```JavaScript
-// lib/like-express.js
-const http = require('http')
 
+express实现原理
+```JavaScript
+// lib/like-express.js 
+const http = require('http')
 const slice = Array.prototype.slice
 
 class LikeExpress {
@@ -1417,9 +1412,7 @@ class LikeExpress {
     
     curRoutes.forEach(routeInfo => {
       if(url.indexOf(routeInfo.path) === 0) {
-        // url==='/api/test' 且 routeInfo.path==='/'
-        // url==='/api/test' 且 routeInfo.path==='/api'
-        // url==='/api/test' 且 routeInfo.path==='/api/test'
+        // url==='/api/test' 且 routeInfo.path为 '/'、'/api' 或 '/api/test'
         stack = stack.concat(routeInfo.stack)
       }
     })
@@ -1446,7 +1439,8 @@ class LikeExpress {
         res.setHeader('Content-Type', 'application/json')
         res.end(JSON.stringify(data))
       }
-      const { url, mrthod } = req
+      const url = req.url
+      const method = req.method.toLowerCase() // 这里必须 toLowerCase() 统一成小写
       const resultList = this.match(method, url)
       this.handle(req, res, resultList)
     }
@@ -1465,5 +1459,61 @@ module.exports = () => {
 }
 ```
 
+测试代码, 测试自己实现的express 是否生效
+```JavaScript
+// lib/express/test-express
+const express = require('./like-express')
+const app = express()
+
+app.use((req, res, next) => {
+  console.log('开始')
+  next()
+})
+
+app.use((req, res, next) => {
+  console.log('cookie')
+  req.cookie = {
+    userId: 'abc'
+  }
+  next()
+})
+
+app.use('/api', (req, res, next) => {
+  console.log('use api')
+  next()
+})
+
+app.get('/api', (req, res, next) => {
+  console.log('get api')
+  next()
+})
+
+loginCheck = (req, res, next) => {
+  setTimeout(() => {
+    console.log('loginCheck')
+    next()
+  }, 1000);
+}
+
+app.get('/api/test', loginCheck, (req, res, next) => {
+  console.log('get api test')
+  res.json({
+    errorno: 0,
+    data: req.cookie
+  })
+})
 
 
+app.listen(3001, () => {
+  console.log('listening at http://localhost:3001')
+})  
+```
+运行 node lib/express/test-express 访问页面，查看控制台输出
+
+
+##### 小结
+使用express框架与原生开发区别:
+写法上发生改变，如req.query、req.json，可直接获取写入，不需要自己写入； 
+存储session到redis 使用 express-session、connect-redis，登录中间件;
+记录日志，使用morgan
+express原理

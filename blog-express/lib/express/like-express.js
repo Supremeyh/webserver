@@ -1,5 +1,4 @@
 const http = require('http')
-
 const slice = Array.prototype.slice
 
 class LikeExpress {
@@ -52,9 +51,7 @@ class LikeExpress {
     
     curRoutes.forEach(routeInfo => {
       if(url.indexOf(routeInfo.path) === 0) {
-        // url==='/api/test' 且 routeInfo.path==='/'
-        // url==='/api/test' 且 routeInfo.path==='/api'
-        // url==='/api/test' 且 routeInfo.path==='/api/test'
+        // url==='/api/test' 且 routeInfo.path为 '/'、'/api' 或 '/api/test'
         stack = stack.concat(routeInfo.stack)
       }
     })
@@ -81,7 +78,7 @@ class LikeExpress {
         res.setHeader('Content-Type', 'application/json')
         res.end(JSON.stringify(data))
       }
-      const { url, mrthod } = req
+      const { url, method } = req
       const resultList = this.match(method, url)
       this.handle(req, res, resultList)
     }
