@@ -1325,9 +1325,37 @@ router.get('/detail', (req, res, next) => {
 ```
 
 ##### 记录日志
+access log记录日志，直接使用脚手架推荐的morgan
+```JavaScript
+// app.js
+var path = require('path')
+var fs = require('fs')
+var logger = require('morgan')
 
 
+var ENV = process.env.NODE_ENV
+if(ENV !=='production') {
+  // 开发、测试环境
+  app.use(logger('dev', {
+    stream: process.stdout  // 打印到控制台  可省略
+  }))
+} else {
+  // 线上环境
+  const fileName = path.join(__dirname, 'logs', 'access.log')
+  const writeStream = fs.createWriteStream(fileName, {
+    flags: 'a'
+  })
+  app.use(logger('combined', {
+    stream: writeStream
+  }))
+}
+```
 
+##### 小结
+使用express框架与原生开发区别:
+写法上发生改变，如req.query、req.json，可直接获取写入，不需要自己写入； 
+存储session到redis 使用 express-session、connect-redis，登录中间件;
+记录日志，使用morgan
 
 
 

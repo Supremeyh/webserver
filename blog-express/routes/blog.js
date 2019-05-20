@@ -15,7 +15,10 @@ router.get('/list', loginCheckSession, (req, res, next) => {
   const keyword = req.query.keyword
   // 管理员界面
   if(req.query.isadmin) {
+    console.log('isadmin')
+    
     if(req.session.username==null) {
+      console.log('未登录')
       res.json(new ErrorModel('未登录'))
       return
     }

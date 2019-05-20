@@ -10,8 +10,6 @@ const loginCheck = (username, password) => {
   password = escape(password)
 
   let sql = `select * from users where username=${username} and password=${password};`
-  console.log('sql', sql)
-  
   return execSql(sql).then(arr => {
     return arr[0] || {}
   })
