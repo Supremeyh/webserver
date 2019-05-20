@@ -1517,3 +1517,108 @@ app.listen(3001, () => {
 存储session到redis 使用 express-session、connect-redis，登录中间件;
 记录日志，使用morgan
 express原理
+
+
+### 使用 Koa2 重构博客项目
+express 中间件是异步回调，koa2原生支持async/await
+新开发框架都开始基于koa，例如egg.js
+express 虽然未过时，但koa2肯定是未来趋势
+注: node版本大于等于8.0
+
+#### async/await 异步函数介绍
+##### 异步方式对比
+在/test/files下有a.json、b.json、c.json三个文件，分别用callback、promise 和 async/await三种方式实现异步获取
+* callback-hell
+```JavaScript
+// /test/index.js
+const fs = require('fs')
+const path = require('path')
+
+// callback
+function getFileContentByCb(fileName, cb) {
+  const fullFileName = path.resolve(__dirname, 'files', fileName)
+  fs.readFile(fullFileName, (err, data) => {
+    if(err) {
+      console.error(err)
+      return 
+    }
+    cb(JSON.parse(data.toString()))
+  })
+}
+
+// test callback-hell
+getFileContentByCb('a.json', aData => {
+  console.log('a data', aData)
+  getFileContentByCb(aData.next, bData => {
+    console.log('b data', bData)
+    getFileContentByCb(bData.next, cData => {
+      console.log('c data', cData)
+    })
+  }) 
+})
+
+// 打印结果
+// a data { msg: 'this is a', next: 'b.json' }
+// b data { msg: 'this is b', next: 'c.json' }
+// c data { msg: 'this is c', next: null }
+```
+* promise
+```JavaScript
+// /test/index.js
+function getFileContentByPromise(fileName) {
+  const fullFileName = path.resolve(__dirname, 'files', fileName)
+  return new Promise((resolve, reject) => {
+    fs.readFile(fullFileName, (err, data) => {
+      if(err) {
+        reject(err)
+        return
+      }
+      resolve(JSON.parse(data.toString()))
+    })
+  })
+}
+
+// promise().then()
+getFileContentByPromise('a.json')
+  .then(aData => {
+    console.log('a data', aData)
+    return getFileContentByPromise(aData.next)
+  })
+  .then(bData => {
+    console.log('b data', bData)
+    return getFileContentByPromise(bData.next)
+  })
+  .then(cData => {
+    console.log('c data', cData)
+  })
+```
+* async/await 变成同步的写法
+要点:
+await包裹在async函数里面； 
+await后可追加promise对象； 
+async函数执行返回的也是一个promise对象；
+promise中resolve内容可以被await解析返回到前面的变量中； 
+try...catch 截获promise中reject的值
+```JavaScript
+// /test/index.js   
+async function readFileData() {
+  try {
+    const aData = await getFileContentByPromise('a.json')  // 其中，getFileContentByPromise和promise一样。
+    console.log('a data', aData)
+    const bData = await getFileContentByPromise(aData.next)
+    console.log('b data', bData)
+    const cData = await getFileContentByPromise(bData.next)
+    console.log('c data', cData)
+  } catch(e) {
+    console.error(e)
+  }
+}
+
+readFileData()
+```
+
+#### koa安装、使用
+#### 开发接口，连接数据库，实现登录，记录日志
+#### 分析koa2中间件原理
+
+
