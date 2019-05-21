@@ -1617,7 +1617,25 @@ async function readFileData() {
 readFileData()
 ```
 
-#### koa安装、使用
+#### koa介绍、安装、使用
+Expressive middleware for node.js using ES2017 async functions
+```JavaScript
+npm i koa-generator -g  // 安装脚手架
+Koa2 blog-koa  // 生成blog-koa 的项目
+npm i cross-env --save-dev  // 安装 cross-env
+
+// package.json  修改配置
+"scripts": {
+  "start": "node bin/www",
+  "dev": "cross-env NODE_ENV=dev ./node_modules/.bin/nodemon bin/www",
+  "prd": "cross-env NODE_ENV=production pm2 start bin/www",
+},
+
+npm i && npm run dev  // 安装依赖、启动项目
+
+// http://localhost:3000/   // 打开浏览器访问默认3000端口
+```
+
 #### 开发接口，连接数据库，实现登录，记录日志
 #### 分析koa2中间件原理
 
