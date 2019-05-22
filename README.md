@@ -1636,6 +1636,31 @@ npm i && npm run dev  // 安装依赖、启动项目
 // http://localhost:3000/   // 打开浏览器访问默认3000端口
 ```
 
+#### 路由
+```JavaScript
+// app.js
+const login = require('./routes/login')
+// routes
+app.use(login.routes(), login.allowedMethods())
+
+
+// routes/login.js
+const router = require('koa-router')()
+
+router.prefix('/login')
+
+router.post('/login', async (ctx, next) => {
+  const { username, password } = ctx.request.body
+  ctx.body = {
+    code: 2000,
+    username,
+    password,
+  }
+})
+
+module.exports = router
+```
+
 #### 开发接口，连接数据库，实现登录，记录日志
 #### 分析koa2中间件原理
 
