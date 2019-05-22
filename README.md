@@ -1636,7 +1636,7 @@ npm i && npm run dev  // 安装依赖、启动项目
 // http://localhost:3000/   // 打开浏览器访问默认3000端口
 ```
 
-#### 路由
+#### koa 路由
 ```JavaScript
 // app.js
 const login = require('./routes/login')
@@ -1660,8 +1660,58 @@ router.post('/login', async (ctx, next) => {
 
 module.exports = router
 ```
+#### koa 中间件
+app.use()注册中间件，使用async/await; next() 也是一个promise
+```JavaScript
+// app.js  以 logger 中间件为例
+app.use(async (ctx, next) => {
+  const start = new Date()
+  await next()
+  const ms = new Date() - start
+  console.log(`${ctx.method} ${ctx.url} - ${ms}ms`)
+})
+```
+#### 实现登录 redis存储session
+实现登录的session， 和express类似，基于koa-generic-session 和 koa-redis
+npm i koa-generic-session redis koa-redis --save
+```JavaScript
+// app.js   配置session、redis
+const session = require('koa-generic-session')
+const redisStore = require('koa-redis')
 
-#### 开发接口，连接数据库，实现登录，记录日志
+// session  在logger和routes之间
+app.keys = ['HELLO_Node@2019']
+app.use(session({
+  // cookie
+  cookie: {
+    path: '/',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000
+  },
+  // redis
+  store: redisStore({
+    all: '127.0.0.1:6379'
+  })
+}))
+
+
+// routes/login.js   测试
+router.get('/test', async(ctx, next) => {
+  if(ctx.session.viewNum==null) {
+    ctx.session.viewNum = 0
+  }
+  ctx.session.viewNum++ 
+
+  ctx.body = {
+    code: 2000,
+    viewNum: ctx.session.viewNum
+  }
+})
+```
+启动redis-server， 浏览器访问 http://localhost:3000/login/test  测试; 或者 redis-cli -> keys*  -> get ...  方式来测试
+
+#### 开发路由
+#### 开发接口，连接数据库，记录日志
 #### 分析koa2中间件原理
 
 
