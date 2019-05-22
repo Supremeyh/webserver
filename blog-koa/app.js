@@ -13,6 +13,8 @@ const users = require('./routes/users')
 const login = require('./routes/login')
 const blog = require('./routes/blog')
 
+const { REDIS_CONF } = require('./config/db')
+
 // error handler
 onerror(app)
 
@@ -47,7 +49,8 @@ app.use(session({
   },
   // redis
   store: redisStore({
-    all: '127.0.0.1:6379'
+    // all: '127.0.0.1:6379',
+    all: `${REDIS_CONF.host}:${REDIS_CONF.port}`
   })
 }))
 

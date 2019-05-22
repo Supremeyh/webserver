@@ -1678,8 +1678,9 @@ npm i koa-generic-session redis koa-redis --save
 // app.js   配置session、redis
 const session = require('koa-generic-session')
 const redisStore = require('koa-redis')
+const { REDIS_CONF } = require('./config/db')
 
-// session  在logger和routes之间
+// session  在logger和routes之间  
 app.keys = ['HELLO_Node@2019']
 app.use(session({
   // cookie
@@ -1690,7 +1691,8 @@ app.use(session({
   },
   // redis
   store: redisStore({
-    all: '127.0.0.1:6379'
+    // all: '127.0.0.1:6379'  // 写死
+    all: `${REDIS_CONF.host}:${REDIS_CONF.port}` // 配置store中all为 REDIS_CONF 配置的参数
   })
 }))
 
@@ -1711,6 +1713,78 @@ router.get('/test', async(ctx, next) => {
 启动redis-server， 浏览器访问 http://localhost:3000/login/test  测试; 或者 redis-cli -> keys*  -> get ...  方式来测试
 
 #### 开发路由
+##### 准备工作
+npm i mysql xss --save  安装 mysql、xss 依赖
+
+复用blog-express之前代码，如登录中间件 config、db/mysql.js、controller、utils、middleware、model 等文件夹或文件 到blog-koa项目，对其中一些文件进行修改，中间件要符合koa中间件形式
+
+修改controller 为 async/await 函数。 此处举getDetail、newBlog两个例子，可对比promise 和 async/await 的用法区别，写法清晰很多
+```JavaScript
+// controller/blog.js  以getDetail函数为例
+const getDetail = (id) => {
+  let sql = `select * from blogs where id='${id}';`
+  return execSql(sql).then(arr => {
+    return arr[0]
+  })
+}
+// 修改为
+const getDetail = async (id) => {
+  let sql = `select * from blogs where id='${id}';`
+  const rows = await execSql(sql)
+  return rows[0]
+}
+
+
+// controller/blog.js  再以newBlog函数为例
+const newBlog = async (blogData={}) => {
+  // ...
+  return execSql(sql).then(insertData => {
+    return {
+      id: insertData.insertId
+    }
+  })
+}
+// 修改为
+const newBlog = async (blogData={}) => {
+  // ...
+  const insertData = await execSql(sql)
+  return {
+    id: insertData.insertId
+  }
+}
+```
+修改 middleware/loginCheckSession.js  改promise方式为koa方式。 这个是比较标准的koa中间件。
+```JavaScript
+// middleware/loginCheckSession.js 
+const { ErrorModel } = require('../model/resModel')
+
+const loginCheckSession = (req, res, next) => {
+  if(req.session.username) {
+    next()
+    return
+  }
+  res.json(new ErrorModel('未登录'))
+}
+
+module.exports = loginCheckSession
+
+// 修改为
+const { ErrorModel } = require('../model/resModel')
+
+const loginCheckSession = async (rctx, next) => {
+  if(ctx.session.username) {
+    await next()
+    return
+  }
+  ctx.body = new ErrorModel('未登录')
+}
+
+module.exports = loginCheckSession
+```
+
+##### 初始化路由，并开发接口
+##### 联调测试，启动nginx、前端项目
+
 #### 开发接口，连接数据库，记录日志
 #### 分析koa2中间件原理
 
