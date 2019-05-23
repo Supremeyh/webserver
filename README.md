@@ -1807,10 +1807,38 @@ router.get('/detail', async (ctx, next) => {
   ctx.body = new SuccessModel(detailData)
 })
 ```
+##### 联调测试，连接数据库，启动nginx、前端项目
+前端页面访问请求，或者使用postman模拟
 
-##### 联调测试，启动nginx、前端项目
+#### 日志记录、拆分与分析
+access log 记录，使用morgan, 新建logs/access.log文件
+koa框架中koa-logger仅仅使得日志打印格式化，并未真正记录日志，需借助koa-morgan, 因morgan只适用于express
+自定义日志暂时使用console.log/error
 
-#### 开发接口，连接数据库，记录日志
+npm i koa-morgan --save  安装依赖 koa-morgan
+```JavaScript
+// app.js
+const path = require('path')
+const fs = require('fs')
+const morgan = require('koa-morgan')
+
+// logs  可写在logger之后。类似于express,但需app.use(logger('dev'))改为app.use(morgan('dev')),因logger已被占用
+const ENV = process.env.NODE_ENV
+if(ENV !=='production') {
+  // 开发、测试环境
+  app.use(morgan('dev'));
+} else {  
+  // 线上环境
+  const fileName = path.join(__dirname, 'logs', 'access.log')
+  const writeStream = fs.createWriteStream(fileName, {
+    flags: 'a'
+  })
+  app.use(morgan('combined', {
+    stream: writeStream
+  }));
+}
+```
+
 #### 分析koa2中间件原理
 
 
