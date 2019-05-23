@@ -1637,6 +1637,7 @@ npm i && npm run dev  // 安装依赖、启动项目
 ```
 
 #### koa 路由
+需要特别注意的是，之前的req.body 都需要改为 ctx.request.body 请求体，以区分ctx.body 返回体
 ```JavaScript
 // app.js
 const login = require('./routes/login')
@@ -1781,8 +1782,32 @@ const loginCheckSession = async (rctx, next) => {
 
 module.exports = loginCheckSession
 ```
+##### 初始化路由，开发接口
+开发routes/login.js和routes/blog.js路由，这步也可以复用之前blog-express中routes下的代码，对其进行改造koa的async/await形式。以routes/blog.js 中获取博客详情为例，
+```JavaScript
+// routes/blog.js
+// controller  这几行可直接复用
+const { getList, getDetail, newBlog, updateBlog, delBlog } = require('../controller/blog')
+// model
+const { SuccessModel, ErrorModel } = require('../model/resModel')
+const loginCheckSession = require('../middleware/loginCheckSession')
 
-##### 初始化路由，并开发接口
+// 以下需改造
+router.get('/detail', (req, res, next) => {
+  const id = req.query.id
+  let detailResult = getDetail(id)
+  return detailResult.then(detailData => {
+    res.json(new SuccessModel(detailData))
+  })
+})
+// 替换为
+router.get('/detail', async (ctx, next) => {
+  const id = ctx.query.id
+  const detailData = await getDetail(id)
+  ctx.body = new SuccessModel(detailData)
+})
+```
+
 ##### 联调测试，启动nginx、前端项目
 
 #### 开发接口，连接数据库，记录日志
