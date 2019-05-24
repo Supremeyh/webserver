@@ -1992,7 +1992,7 @@ app.listen(3000);
 
 #### PM2
 Node.js Production Process Manager with a built-in Load Balancer.
-pm2可进程守护，系统崩溃自动重启； 启动多进程，充分利用CPU和内存；自带日志记录功能
+pm2核心价值: 进程守护，系统崩溃自动重启； 启动多进程，充分利用CPU和内存；自带日志记录功能
 
 ##### 下载、安装
 npm i pm2 -g    如果失败，可指定版本，如pm2@3.2.3
@@ -2082,9 +2082,5 @@ npm run prd 启动项目，当访问 http://localhost:3000/err，进程崩溃，
 问题: 但多进程内存无法共享，可以通过redis实现数据共享
 实现: 如上， pm2.conf.json配置文件中增加 "instances": 4,  即可实现多进程
 
-
-
-
-
-修改pm2 启动命令，重启
-访问server，检查日志文件的内容，查看日志记录是否生效
+##### 服务器运维
+服务器运维，一般由专业的OP人员或团队来处理，中小型工期推荐使用云服务，如阿里云的node平台
