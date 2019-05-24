@@ -1839,6 +1839,150 @@ if(ENV !=='production') {
 }
 ```
 
-#### 分析koa2中间件原理
+#### koa2中间件原理
+##### koa2官方实例
+洋葱圈模型: request -> onion-1 start -> onion-2 start -> onion-2 end -> onion-1 end -> response
+```JavaScript
+// blog-koa/lib/test-koa.js   nodemon test-koa.js 启动
+const Koa = require('koa');
+const app = new Koa();
 
+// logger
+app.use(async (ctx, next) => {
+  console.log('onion-1 ', 'start')
+  
+  await next();
+  const rt = ctx.response.get('X-Response-Time');
+  console.log(`${ctx.method} ${ctx.url} - ${rt}`);
 
+  console.log('onion-1 ', 'end')
+});
+
+// x-response-time
+app.use(async (ctx, next) => {
+  console.log('onion-2 ', 'start')
+
+  const start = Date.now();
+  await next();
+  const ms = Date.now() - start;
+  ctx.set('X-Response-Time', `${ms}ms`);
+
+  console.log('onion-2 ', 'end')
+});
+
+// response
+app.use(async ctx => {
+  console.log('onion-3 ', 'start')
+
+  ctx.body = 'Hello World';
+
+  console.log('onion-3 ', 'end')
+});
+
+app.listen(3000);
+```
+##### 原理分析
+app.use 注册中间件，先收集起来
+实现next机制，即上一个通过next触发下一个
+不涉及method和path判断
+
+##### 核心代码
+```JavaScript
+// lib/like-koa.js
+const http = require('http')
+
+// 组合中间件
+function compose(middlewareList) {
+  return function(ctx) {
+    // 中间件调用
+    function dispatch(i) {
+      const fn = middlewareList[i]
+      // 兼容未使用async，保证返回的中间件都是promise
+      try {
+        return Promise.resolve(
+          fn(ctx, dispatch.bind(null, i+1))  // next机制
+        )
+      } catch (e) {
+        Promise.reject(e)
+      }
+    }
+    return dispatch(0)
+  }
+}
+
+class LikeKoa {
+  constructor() {
+    this.middlewareList = []
+  }
+
+  use(fn) {
+    this.middlewareList.push(fn)
+    return this  // 链式调用
+  }
+
+  listen(...args) {
+    const server = http.createServer(this.callback())
+    server.listen(...args)
+  }
+
+  callback() {
+    const fn = compose(this.middlewareList)
+
+    return (req, res) => {
+      const ctx = this.createContext(req, res)
+      return this.handleRequest(ctx, fn)
+    }
+  }
+
+  // 拼接ctx
+  createContext(req, res) {
+    const ctx = {
+      req, 
+      res
+    }
+    ctx.query = req.query
+    return ctx
+  }
+
+  handleRequest(ctx, fn) {
+    return fn(ctx)
+  }
+}
+
+module.exports = LikeKoa
+```
+##### 测试代码
+仿照官网示例demo实现的lib/test-koa.js，修改koa引用like-koa，ctx涉及method、url、body、set、get等处
+```JavaScript
+// lib/test-like-koa.js
+const Koa = require('./like-koa'); // 替换node_modules/koa
+const app = new Koa();
+
+// logger
+app.use(async (ctx, next) => {
+  console.log('onion-1 ', 'start')
+  await next();
+  const rt = ctx['X-Response-Time'];  // 替换ctx.get
+  console.log(`${ctx.req.method} ${ctx.req.url} - ${rt}`);  // 替换ctx.method/url
+  console.log('onion-1 ', 'end')
+});
+
+// x-response-time
+app.use(async (ctx, next) => {
+  console.log('onion-2 ', 'start')
+  const start = Date.now();
+  await next();
+  const ms = Date.now() - start;
+  ctx['X-Response-Time'] = `${ms}ms`;  // 替换ctx.set
+  console.log('onion-2 ', 'end')
+});
+
+// response
+app.use(async ctx => {
+  console.log('onion-3 ', 'start')
+  ctx.res.end('Hello from like-koa!');  // 替换ctx.body
+  console.log('onion-3 ', 'end')
+});
+
+app.listen(3000);
+```
