@@ -1986,3 +1986,40 @@ app.use(async ctx => {
 
 app.listen(3000);
 ```
+
+### 上线与配置
+服务器稳定性、充分利用服务器资源，以便提高性能、线上日志记录
+
+#### PM2
+Node.js Production Process Manager with a built-in Load Balancer.
+进程守护，系统崩溃自动重启
+启动多进程，充分利用CPU和内存
+配置
+自带日志记录功能
+服务器运维
+##### 下载、安装
+npm i pm2 -g    如果失败，可指定版本，如pm2@3.2.3
+pm2 --version  查看版本
+
+```JavaScript
+// package.json  pm启动production环境
+"scripts": {
+  "test": "echo \"Error: no test specified\" && exit 1",
+  "dev": "cross-env NODE_ENV=dev nodemon app.js",
+  "prd": "cross-env NODE_ENV=production pm2 start ./bin/www"
+},
+```
+运行命令npm run prd
+
+##### 常用命令
+pm2 start ... 启动
+pm2 list 进程列表
+pm2 start App name/id  重启
+pm2 stop App name/id  停止
+pm2 delete App name/id  删除
+pm2 info App name/id  查看信息
+pm2 log App name/id  查看日志
+pm2 monit App name/id  监控CPU/内存
+
+
+
