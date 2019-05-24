@@ -1992,11 +1992,8 @@ app.listen(3000);
 
 #### PM2
 Node.js Production Process Manager with a built-in Load Balancer.
-进程守护，系统崩溃自动重启
-启动多进程，充分利用CPU和内存
-配置
-自带日志记录功能
-服务器运维
+pm2可进程守护，系统崩溃自动重启； 启动多进程，充分利用CPU和内存；自带日志记录功能
+
 ##### 下载、安装
 npm i pm2 -g    如果失败，可指定版本，如pm2@3.2.3
 pm2 --version  查看版本
@@ -2051,3 +2048,35 @@ server.listen(3000, () => {
 npm run dev, 以node或 nodemon启动项目，则直接崩溃，不会回复。
 npm run prd 启动项目，当访问 http://localhost:3000/err，进程崩溃，但当访问http://localhost:3000 时，仍然可以访问，pm2 list 中restart此时增加了。
  
+##### 配置
+新建pm2 配置文件 test/pm2/pm2.conf.json，包括进程数量，日志文件目录等配置信息
+```JSON
+// test/pm2/pm2.conf.json
+{
+  "apps": {
+    "name": "pm2-test",
+    "script": "app.js",
+    "watch": true,
+    "ignore_watch": [
+      "node_modules",
+      "logs"
+    ],
+    // "instances": 2,
+    "out_file": "logs/out.log",
+    "error_file": "logs/err.log",
+    "log_date_format": "YYYY-MM-DD HH:mm:ss"
+  }
+}
+
+// package.json
+ "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "cross-env NODE_ENV=dev nodemon app.js",
+    // "prd": "cross-env NODE_ENV=production pm2 start app.js"
+    "prd": "cross-env NODE_ENV=production pm2 start pm2.conf.json"
+  },
+```
+
+
+修改pm2 启动命令，重启
+访问server，检查日志文件的内容，查看日志记录是否生效

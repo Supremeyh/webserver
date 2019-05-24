@@ -1,0 +1,14 @@
+{
+  "apps": {
+    "name": "pm2-test",
+    "script": "app.js",
+    "watch": true,
+    "ignore_watch": [
+      "node_modules",
+      "logs"
+    ],
+    "out_file": "logs/out.log",
+    "error_file": "logs/err.log",
+    "log_date_format": "YYYY-MM-DD HH:mm:ss"
+  }
+}
