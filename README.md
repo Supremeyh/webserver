@@ -2021,5 +2021,33 @@ pm2 info App name/id  查看信息
 pm2 log App name/id  查看日志
 pm2 monit App name/id  监控CPU/内存
 
+##### 进程守护
+使用node app.js 或 nodemon app.js，进程崩溃则不能访问，使用pm2 系统崩溃可自动重启
 
+如下，
+```JavaScript
+// test/pm2/app.js
+const http = require('http')
 
+const server = http.createServer((req, res) => {
+  // 模拟错误
+  if(req.url === '/err') {
+    throw new Error('ooops !')
+  }
+
+  res.setHeader("Content-Type", "application/json")
+  res.end(
+    JSON.stringify({
+      code: 2000,
+      data: [2, 3, 5]
+    })
+  )
+})
+
+server.listen(3000, () => {
+  console.log('listening at port 3000')
+})
+```
+npm run dev, 以node或 nodemon启动项目，则直接崩溃，不会回复。
+npm run prd 启动项目，当访问 http://localhost:3000/err，进程崩溃，但当访问http://localhost:3000 时，仍然可以访问，pm2 list 中restart此时增加了。
+ 

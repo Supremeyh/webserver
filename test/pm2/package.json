@@ -1,0 +1,14 @@
+{
+  "name": "pm2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "cross-env NODE_ENV=dev nodemon app.js",
+    "prd": "cross-env NODE_ENV=production pm2 start app.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
