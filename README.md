@@ -2061,7 +2061,7 @@ npm run prd 启动项目，当访问 http://localhost:3000/err，进程崩溃，
       "node_modules",
       "logs"
     ],
-    // "instances": 2,
+    "instances": 4,  // 多进程
     "out_file": "logs/out.log",
     "error_file": "logs/err.log",
     "log_date_format": "YYYY-MM-DD HH:mm:ss"
@@ -2069,13 +2069,21 @@ npm run prd 启动项目，当访问 http://localhost:3000/err，进程崩溃，
 }
 
 // package.json
- "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "cross-env NODE_ENV=dev nodemon app.js",
-    // "prd": "cross-env NODE_ENV=production pm2 start app.js"
-    "prd": "cross-env NODE_ENV=production pm2 start pm2.conf.json"
-  },
+"scripts": {
+  "test": "echo \"Error: no test specified\" && exit 1",
+  "dev": "cross-env NODE_ENV=dev nodemon app.js",
+  // "prd": "cross-env NODE_ENV=production pm2 start app.js"
+  "prd": "cross-env NODE_ENV=production pm2 start pm2.conf.json"
+}
 ```
+##### 多进程
+原因: 单个进程内存受限，操作系统会限制一个进程的最大可用内存，如nodejs在64位操作系统，最大可占用1.4GB。
+缺陷: 因此只有一个进程，则无法充分利用多核CPU优势和机器全部内存
+问题: 但多进程内存无法共享，可以通过redis实现数据共享
+实现: 如上， pm2.conf.json配置文件中增加 "instances": 4,  即可实现多进程
+
+
+
 
 
 修改pm2 启动命令，重启
